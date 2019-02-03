@@ -12,6 +12,7 @@
 import math
 import random
 import string
+#import matplotlib
 
 random.seed(0)
 
@@ -35,7 +36,7 @@ def sigmoid(x):
 # La derive de la fonction sigmoid, pour notre cas la derive de tan(x)
 def dsigmoid(y):
     return 1.0 - y**2
-    #return 1 / (1.0 - y**2)
+    #return 1 / (1.0 + y**2)
 
 class NN:
     def __init__(self, ni, nh, no):
@@ -77,10 +78,10 @@ class NN:
                 print ("self.w[{0}][{1}]: {2}".format(j, k, self.wi[j][k]))
         print ("\n")
 
-        # Mémorisation des poids au temps n-1
+        # Mémorisation des poids w au temps n-1 
         self.ci = makeMatrix(self.ni, self.nh)
         self.co = makeMatrix(self.nh, self.no)
-        #print "Mémorisation des anciens poids entre entrée/caché [{0}], caché/sortié [{1}] \n".format(self.ci, self.co)
+        print ("Mémorisation des anciens poids entre entrée/caché [{0}], caché/sortié [{1}] \n".format(self.ci, self.co))
 
     # Mise à jour des neurones
     def update(self, inputs):
@@ -90,32 +91,31 @@ class NN:
             raise ValueError("Mauvaise valeur dans le nombre d'entrées")
 
         # Calcul des neurones en entrée
-        #print "\n----- VALEUR DES 'ai'"
+        #print ("\n----- VALEUR DES 'ai'")
         for i in range(self.ni-1):
             self.ai[i] = sigmoid(inputs[i])
             #self.ai[i] = inputs[i]
-            #print "-> ai[{0}]: {1}".format(i, self.ai[i])
+            #print ("-> ai[{0}]: {1}".format(i, self.ai[i]))
 
         # Calcul des neurones cachés
-        #print "\n----- VALEUR DES 'wi' puis des 'ah'"
+        #print ("\n----- VALEUR DES 'wi' puis des 'ah'")
         for j in range(self.nh):
             sum = 0.0
             for i in range(self.ni):
                 sum = sum + self.ai[i] * self.wi[i][j]
-                #print "w[{0}][{1}]: {2}".format(i, j, self.wi[i][j])
+                #print ("w[{0}][{1}]: {2}".format(i, j, self.wi[i][j]))
             self.ah[j] = sigmoid(sum)
-            #print "-> ah[{0}]: {1}".format(j, self.ah[j])
+            #print ("-> ah[{0}]: {1}".format(j, self.ah[j]))
 
         # Calcul des neurones de sortie
-        #print "\n----- VALEUR DES 'wo' puis des 'ao'"
+        #print ("\n----- VALEUR DES 'wo' puis des 'ao'")
         for k in range(self.no):
             sum = 0.0
             for j in range(self.nh):
                 sum = sum + self.ah[j] * self.wo[j][k]
-                #print "w[{0}][{1}]: {2}".format(j, k, self.wo[j][k])
+                #print ("w[{0}][{1}]: {2}".format(j, k, self.wo[j][k]))
             self.ao[k] = sigmoid(sum)
-            #print "-> ao[{0}]: {1}".format(k, self.ao[k])
-
+            #print ("-> ao[{0}]: {1}".format(k, self.ao[k]))
 
         return self.ao[:]
 
@@ -124,12 +124,16 @@ class NN:
         if len(targets) != self.no:
             raise ValueError("Mauvaise valeur entre le nombre de neurones de sortie et la liste d'essais nommé pat")
 
-        #Passe en arrière
+        # Passe en arrière
         # Calcul de l'erreur et du delta entre la valeur cherchée et celle calculée en sortie
+        print ("\nPasse en arrière")
+        
         output_deltas = [0.0] * self.no                         #Construction d'une liste contenant no valeurs à 0.0
         for k in range(self.no):
             error = targets[k]-self.ao[k]                       #Erreur = Différence entre cherché et calculé
-            output_deltas[k] = dsigmoid(self.ao[k]) * error     #l'ecart = dérivé de calculé multiplié par la différence
+            #print("Erreur : ", error)
+            output_deltas[k] = dsigmoid(self.ao[k]) * error     #l'ecart = dérivé de calculé multiplié par la différence (erreur)
+        print ("Matrice delta couche de sortie : ", output_deltas)
 
         # Calcul de l'erreur et du delta entre la valeur cherchée et celle calculée pour la couche cachée
         hidden_deltas = [0.0] * self.nh
@@ -138,27 +142,28 @@ class NN:
             for k in range(self.no):
                 error = error + output_deltas[k]*self.wo[j][k]
             hidden_deltas[j] = dsigmoid(self.ah[j]) * error
+        print ("Matrice delta couche cachée : ", hidden_deltas)
 
-        #Passe en avant *************************************************
+        # Passe en avant *************************************************
         # Mise à jour des poids de la couche de sortie
         for j in range(self.nh):
             for k in range(self.no):
                 change = output_deltas[k]*self.ah[j]
-                self.wo[j][k] = self.wo[j][k] + N*change + M*self.co[j][k]
+                self.wo[j][k] = self.wo[j][k] + N * change + M*self.co[j][k]
                 self.co[j][k] = change
-                #print N*change, M*self.co[j][k]
+                #print (N*change, M*self.co[j][k])
 
         # Mise à jour des poids de la couche d'entrée
         for i in range(self.ni):
             for j in range(self.nh):
                 change = hidden_deltas[j]*self.ai[i]
-                self.wi[i][j] = self.wi[i][j] + N*change + M*self.ci[i][j]
+                self.wi[i][j] = self.wi[i][j] + N * change + M*self.ci[i][j]
                 self.ci[i][j] = change
 
         # calcule de l'erreur
         error = 0.0
         for k in range(len(targets)):
-            error = error + 0.5*(targets[k]-self.ao[k])**2
+            error = error + 0.5 *(targets[k] - self.ao[k])**2
         return error
 
 
@@ -195,7 +200,7 @@ class NN:
         #print(self.nh)
 
     # Apprentissage du reseau
-    def train(self, patterns, iterations=200, N=0.5, M=0.1):
+    def train(self, patterns, iterations=10, N=0.5, M=0.1):
 
         print ("--- APPRENTISSAGE DU RESEAU par mise à jour des poids et rétro-propagation---")
 
@@ -225,8 +230,8 @@ def demo():
     # Apprentissage du reseau pour la fonction logique 'XOR'
     pat = [
         [[0,0], [0]],
-        [[0,1], [1]],
-        [[1,0], [1]],
+        [[0,1], [0]],
+        [[1,0], [0]],
         [[1,1], [1]]
     ]
 
